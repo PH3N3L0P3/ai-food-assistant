@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Food Decision Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f5f0;--surface:#fff;--surface2:#f0ede6;--border:#e2ddd5;
+  --gold:#b5851a;--gold2:#c8960e;--teal:#1a8a7a;
+  --text:#1e1c18;--muted:#6b6457;--danger:#c0392b;--green:#2e7d52;
+  --pink:#e91e8c;--pink2:#f06292;--orange:#f57c00;--purple:#7b1fa2;--blue:#1565c0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;font-size:15px;line-height:1.6;overflow-x:hidden}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(247,245,240,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;padding:0 24px;height:52px;overflow-x:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:12px;font-family:'DM Mono',monospace;white-space:nowrap;padding:6px 10px;border-radius:4px;transition:.2s}
+nav a:hover,nav a.active{color:var(--gold);background:rgba(181,133,26,.08)}
+.nav-brand{color:var(--gold);font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-right:12px;white-space:nowrap}
+
+/* HERO */
+.hero{min-height:auto;display:flex;flex-direction:column;justify-content:center;padding:60px 5vw 52px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 60% 40%,rgba(181,133,26,.06) 0%,transparent 70%);pointer-events:none}
+.hero-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:16px}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,70px);font-weight:900;line-height:1.1;margin-bottom:12px}
+.hero h1 span{color:var(--gold)}
+.hero-sub{font-size:16px;color:var(--muted);max-width:500px;margin-bottom:36px}
+.hero-meta{display:flex;gap:32px;flex-wrap:wrap}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-val{font-family:'DM Mono',monospace;font-size:22px;color:var(--gold);font-weight:500}
+.meta-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+
+/* SECTION */
+section{padding:64px 5vw;border-top:1px solid var(--border)}
+.section-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:8px}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(22px,3.5vw,38px);font-weight:700;margin-bottom:28px}
+
+/* OBJECTIVE */
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.obj-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;position:relative;overflow:hidden;transition:.3s}
+.obj-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.obj-card::before{content:attr(data-num);position:absolute;top:10px;right:14px;font-family:'DM Mono',monospace;font-size:26px;color:var(--border);font-weight:700}
+.obj-card h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:8px;font-family:'DM Mono',monospace}
+.obj-card p{font-size:13px;color:var(--muted);line-height:1.6}
+
+/* WORKFLOW */
+.workflow{display:flex;flex-wrap:wrap;gap:0;margin:20px 0}
+.wf-step{display:flex;align-items:flex-start;gap:10px;flex:1;min-width:150px;padding:18px 14px;border:1px solid var(--border);border-right:none;background:var(--surface);transition:.3s}
+.wf-step:last-child{border-right:1px solid var(--border)}
+.wf-step:hover{background:var(--surface2);border-color:var(--gold)}
+.wf-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--teal);padding:2px 6px;background:rgba(26,138,122,.1);border-radius:3px;white-space:nowrap;flex-shrink:0}
+.wf-text h4{font-size:12px;color:var(--text);margin-bottom:3px}
+.wf-text p{font-size:11px;color:var(--muted);line-height:1.4}
+
+/* TOOLS */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tool-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:10px;transition:.3s}
+.tool-card:hover{border-color:var(--teal);background:var(--surface2)}
+.tool-icon{font-size:20px;flex-shrink:0}
+.tool-info h4{font-size:12px;color:var(--text);font-weight:600}
+.tool-info p{font-size:11px;color:var(--muted)}
+
+/* SCORING TABLE */
+.criteria-table{width:100%;border-collapse:collapse}
+.criteria-table th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.criteria-table td{padding:11px 14px;border-bottom:1px solid rgba(226,221,213,.5);font-size:13px}
+.criteria-table tr:hover td{background:var(--surface2)}
+.score-bar-wrap{background:var(--border);border-radius:99px;height:5px;width:100px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
+.score-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--gold2))}
+.badge-score{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold);font-weight:600}
+
+/* AREA TABS */
+.area-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px}
+.area-tab{padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:13px;transition:.2s}
+.area-tab.active,.area-tab:hover{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:700}
+
+/* TOP 10 TABLE */
+.data-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+.data-table{width:100%;border-collapse:collapse;min-width:680px}
+.data-table th{font-family:'Sarabun',sans-serif;font-size:12px;font-weight:700;letter-spacing:0;color:var(--text);text-transform:none;padding:12px 12px;text-align:left;border-bottom:2px solid var(--gold);background:var(--surface2);white-space:nowrap}
+.data-table td{padding:10px 12px;border-bottom:1px solid rgba(226,221,213,.4);font-size:12px;vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--surface2)}
+.rank-badge{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--border);color:var(--muted)}
+.rank-badge.g{background:linear-gradient(135deg,#b5851a,#c8960e);color:#fff}
+.rank-badge.s{background:linear-gradient(135deg,#6e7f96,#9ab);color:#fff}
+.rank-badge.b{background:linear-gradient(135deg,#a0612a,#d4895a);color:#fff}
+.total-score{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--gold)}
+.food-chip{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);white-space:nowrap}
+.price-chip{font-size:10px;padding:2px 7px;border-radius:99px;white-space:nowrap;font-weight:600}
+.star{color:#d4a017}
+.map-link{color:var(--teal);font-size:10px;text-decoration:none}
+.sm{font-family:'DM Mono',monospace;font-size:10px;padding:2px 4px;border-radius:2px}
+.sm1{background:rgba(181,133,26,.1);color:#7a5800}
+.sm2{background:rgba(26,138,122,.1);color:#1a6b5e}
+.sm3{background:rgba(46,125,82,.1);color:#1e6040}
+.sm4{background:rgba(90,60,160,.1);color:#5a3c9e}
+.sm5{background:rgba(180,90,30,.1);color:#994e10}
+.sm6{background:rgba(180,50,90,.1);color:#9e2050}
+
+/* TOP 3 CARDS */
+.top3-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.top3-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:.3s}
+.top3-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 10px 32px rgba(0,0,0,.08)}
+.top3-card.rank1{border-color:rgba(181,133,26,.4)}
+.card-header{padding:20px 20px 12px;border-bottom:1px solid var(--border);position:relative}
+.card-rank{position:absolute;top:14px;right:14px;font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:3px}
+.card-rank.r1{background:linear-gradient(135deg,#b5851a,#c8960e);color:#fff;font-weight:700}
+.card-rank.r2{background:rgba(110,127,150,.12);color:#4a6070;border:1px solid rgba(110,127,150,.3)}
+.card-rank.r3{background:rgba(160,97,42,.1);color:#7a4a10;border:1px solid rgba(160,97,42,.25)}
+.card-name{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;line-height:1.3;margin-bottom:8px;padding-right:56px}
+.card-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card-body{padding:16px 20px}
+.sb-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;font-family:'DM Mono',monospace}
+.sb-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.sb-label{font-size:10px;color:var(--muted);width:110px;flex-shrink:0}
+.sb-bar-wrap{flex:1;background:var(--border);border-radius:99px;height:4px;overflow:hidden}
+.sb-bar{height:100%;border-radius:99px}
+.sb-val{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);width:28px;text-align:right;flex-shrink:0}
+.total-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0 0;border-top:1px solid var(--border);margin-top:8px}
+.total-label{font-size:11px;color:var(--muted)}
+.total-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)}
+.card-footer{padding:10px 20px 16px;display:flex;gap:8px;flex-wrap:wrap}
+.info-pill{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.info-pill b{color:var(--text)}
+
+/* ========================
+   SCENARIO SECTION
+   ======================== */
+.scenario-section{background:var(--surface2);border-radius:16px;padding:32px;margin-bottom:8px}
+.scenario-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
+.sc-tab{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;border:2px solid var(--border);background:var(--surface);cursor:pointer;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--muted);transition:.2s;white-space:nowrap}
+.sc-tab:hover{border-color:var(--gold);color:var(--gold)}
+.sc-tab.active{color:#fff;border-color:transparent}
+.sc-tab[data-sc="safe"].active{background:#1565c0}
+.sc-tab[data-sc="budget"].active{background:var(--pink)}
+.sc-tab[data-sc="quick"].active{background:var(--orange)}
+.sc-tab[data-sc="work"].active{background:var(--purple)}
+.sc-tab[data-sc="group"].active{background:var(--green)}
+.sc-tab-icon{font-size:16px}
+.sc-desc{font-size:12px;color:var(--muted);margin-bottom:22px;padding:10px 14px;background:var(--surface);border-radius:8px;border-left:3px solid var(--gold)}
+.scenario-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.sc-card{background:var(--surface);border-radius:12px;overflow:hidden;border:2px solid var(--border);transition:.3s;position:relative}
+.sc-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.sc-card-header{padding:16px 18px 10px;position:relative}
+.sc-badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;font-family:'DM Mono',monospace}
+.sc-rank-label{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:8px}
+.sc-name{font-size:15px;font-weight:700;line-height:1.3;margin-bottom:8px;padding-right:60px}
+.sc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.sc-score-bar-wrap{height:6px;background:var(--border);border-radius:99px;margin:10px 0 4px;overflow:hidden}
+.sc-score-bar{height:100%;border-radius:99px;transition:width .6s ease}
+.sc-score-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.sc-score-num{font-family:'DM Mono',monospace;font-weight:700;font-size:13px}
+.sc-body{padding:0 18px 16px}
+.sc-reasons{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.sc-reason{font-size:12px;color:var(--muted);display:flex;align-items:flex-start;gap:6px}
+.sc-reason::before{content:"✓";color:var(--green);font-weight:700;flex-shrink:0}
+
+/* COMPARISON */
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.compare-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;transition:.3s}
+.compare-card:hover{border-color:var(--teal)}
+.compare-name{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;margin-bottom:4px}
+.compare-area{font-family:'DM Mono',monospace;font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.compare-row{display:flex;gap:6px;margin-bottom:10px}
+.pro-box,.con-box{flex:1;border-radius:6px;padding:9px 11px}
+.pro-box{background:rgba(46,125,82,.06);border:1px solid rgba(46,125,82,.2)}
+.con-box{background:rgba(192,57,43,.05);border:1px solid rgba(192,57,43,.15)}
+.box-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-family:'DM Mono',monospace}
+.pro-box .box-label{color:var(--green)}
+.con-box .box-label{color:var(--danger)}
+.box-items{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.verdict{font-size:11px;background:var(--surface2);border-radius:5px;padding:8px 11px;color:var(--text);border-left:3px solid var(--gold)}
+
+/* DS */
+.ds-list{display:flex;flex-direction:column;gap:10px;max-width:680px}
+.ds-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:13px 16px;display:flex;flex-direction:column;gap:3px;transition:.3s}
+.ds-item:hover{border-color:var(--teal)}
+.ds-name{font-size:13px;color:var(--text);font-weight:600}
+.ds-url{font-family:'DM Mono',monospace;font-size:11px;color:var(--teal);word-break:break-all}
+.ds-desc{font-size:11px;color:var(--muted)}
+
+@media(max-width:640px){
+  .workflow{flex-direction:column}
+  .wf-step{border-right:1px solid var(--border)}
+  .wf-step:last-child{border-bottom:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">🍜 AI FOOD</span>
+  <a href="#header">Header</a>
+  <a href="#objective">Objective</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#tools">Tools</a>
+  <a href="#datasource">Data Sources</a>
+  <a href="#scoring">Scoring</a>
+  <a href="#top10">Top 10</a>
+  <a href="#scenario">Scenario</a>
+  <a href="#top3">Top 3</a>
+  <a href="#compare">Comparison</a>
+</nav>
+
+<section class="hero" id="header">
+  <div class="hero-label">AI Project · 7 June 2025 · By GP: Pom</div>
+  <h1>AI Food Decision<br><span>Assistant</span></h1>
+  <p class="hero-sub">ระบบช่วยเลือกร้านอาหารสำหรับทีม 8–12 คน ด้วย AI Workflow</p>
+  <div class="hero-meta">
+    <div class="meta-item"><span class="meta-val">531</span><span class="meta-label">ร้านที่ Scrape ได้</span></div>
+    <div class="meta-item"><span class="meta-val">5</span><span class="meta-label">ย่านกรุงเทพฯ</span></div>
+    <div class="meta-item"><span class="meta-val">100</span><span class="meta-label">คะแนนเต็ม</span></div>
+    <div class="meta-item"><span class="meta-val">5</span><span class="meta-label">Scenario</span></div>
+  </div>
+</section>
+
+<section id="objective">
+  <div class="section-label">01 — Objective</div>
+  <div class="section-title">เป้าหมายของโปรเจกต์</div>
+  <div class="obj-grid">
+    <div class="obj-card" data-num="01"><h3>กลุ่มเป้าหมาย</h3><p>ทีมงาน 8–12 คน ที่ต้องการหาร้านอาหารในพื้นที่กรุงเทพฯ ฝั่ง BTS/MRT อย่างมีระบบ</p></div>
+    <div class="obj-card" data-num="02"><h3>คำถามหลัก</h3><p>ร้านอาหารใดเหมาะสมที่สุด เมื่อพิจารณาจาก Rating, ราคา, ความสะดวก และประเภทอาหาร?</p></div>
+    <div class="obj-card" data-num="03"><h3>วิธีการ</h3><p>Scrape → Clean ด้วย AI → Score 6 มิติ 100 คะแนน → Scenario Recommendation</p></div>
+    <div class="obj-card" data-num="04"><h3>ผลที่ได้</h3><p>Top 10 ต่อย่าน + Top 3 ต่อ Scenario พร้อม reasoning และ trade-off analysis</p></div>
+  </div>
+</section>
+
+<section id="workflow">
+  <div class="section-label">02 — Workflow Overview</div>
+  <div class="section-title">ขั้นตอนการทำงาน</div>
+  <div class="workflow">
+    <div class="wf-step"><span class="wf-num">01</span><div class="wf-text"><h4>Data Scraping</h4><p>Apify Google Maps Scraper ดึงข้อมูลร้านอาหาร 5 ย่าน กทม.</p></div></div>
+    <div class="wf-step"><span class="wf-num">02</span><div class="wf-text"><h4>Import to Sheets</h4><p>นำข้อมูลดิบเข้า Google Sheets แยกตามย่าน</p></div></div>
+    <div class="wf-step"><span class="wf-num">03</span><div class="wf-text"><h4>AI Cleaning</h4><p>Claude AI Normalize ประเภทอาหาร ราคา ระยะทาง เวลาเปิด</p></div></div>
+    <div class="wf-step"><span class="wf-num">04</span><div class="wf-text"><h4>Scoring Model</h4><p>Python คำนวณ 6 มิติ 100 คะแนน + Scenario weights</p></div></div>
+    <div class="wf-step"><span class="wf-num">05</span><div class="wf-text"><h4>HTML Output</h4><p>Report นี้พร้อม Top 10, Scenario Tabs, Top 3 Cards</p></div></div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="section-label">03 — Tools Used</div>
+  <div class="section-title">เครื่องมือที่ใช้</div>
+  <div class="tools-grid">
+    <div class="tool-card"><span class="tool-icon">🕷️</span><div class="tool-info"><h4>Apify</h4><p>Google Maps Scraper ดึงข้อมูล 531 ร้าน</p></div></div>
+    <div class="tool-card"><span class="tool-icon">📊</span><div class="tool-info"><h4>Google Sheets</h4><p>จัดเก็บและ Organize raw data ทุกย่าน</p></div></div>
+    <div class="tool-card"><span class="tool-icon">🤖</span><div class="tool-info"><h4>Claude AI</h4><p>Normalize food type, price, distance, opening hours</p></div></div>
+    <div class="tool-card"><span class="tool-icon">🐍</span><div class="tool-info"><h4>Python / Pandas</h4><p>Scoring model 6 มิติ + Excel export</p></div></div>
+    <div class="tool-card"><span class="tool-icon">⚡</span><div class="tool-info"><h4>n8n / Make</h4><p>Automation pipeline ระหว่าง tools</p></div></div>
+    <div class="tool-card"><span class="tool-icon">🌐</span><div class="tool-info"><h4>HTML / CSS / JS</h4><p>Final output report นี้</p></div></div>
+  </div>
+</section>
+
+<section id="datasource">
+  <div class="section-label">04 — Data Sources</div>
+  <div class="section-title">แหล่งข้อมูล</div>
+  <div class="ds-list">
+    <div class="ds-item"><span class="ds-name">🗺️ Google Maps via Apify Scraper</span><span class="ds-url">https://console.apify.com/actors/compass~crawler-google-places</span><span class="ds-desc">Rating, Reviews, Address, Phone, Opening Hours, Category — 531 ร้าน 5 ย่าน</span></div>
+    <div class="ds-item"><span class="ds-name">📋 Google Sheets Dataset</span><span class="ds-url">https://docs.google.com/spreadsheets/d/[Restaurant_Data_Storage]</span><span class="ds-desc">Raw + Clean Data แยกตามย่าน พร้อม Scoring Model และ Criteria Reference</span></div>
+    <div class="ds-item"><span class="ds-name">🐍 Python Scoring Script</span><span class="ds-url">Local: /scripts/score_restaurants.py</span><span class="ds-desc">Weighted scoring 6 มิติ รวม 100 คะแนน + Scenario scoring ต่อ 5 use case</span></div>
+  </div>
+</section>
+
+<section id="scoring">
+  <div class="section-label">05 — Scoring Criteria</div>
+  <div class="section-title">เกณฑ์การให้คะแนน 100 คะแนน</div>
+  <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border)">
+  <table class="criteria-table">
+    <thead><tr><th>หมวด</th><th>น้ำหนัก</th><th>สัดส่วน</th><th>รายละเอียด</th></tr></thead>
+    <tbody>
+      <tr><td>⭐ Rating & Review Quality</td><td class="badge-score">25</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:100%"></div></div></td><td style="color:var(--muted);font-size:12px">Rating 4.8+= 15pt | Reviews 3,000+= 10pt</td></tr>
+      <tr><td>👥 Group Suitability</td><td class="badge-score">20</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:80%"></div></div></td><td style="color:var(--muted);font-size:12px">บุฟเฟต์/BBQ/ชาบู=20 | ไทย/เกาหลี/ทะเล=17 | ทั่วไป=14</td></tr>
+      <tr><td>💰 Price Suitability</td><td class="badge-score">15</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:60%"></div></div></td><td style="color:var(--muted);font-size:12px">201–500 บาท/คน=15 | ≤200บ=11 | >1200บ=6</td></tr>
+      <tr><td>🚇 Travel Convenience</td><td class="badge-score">15</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:60%"></div></div></td><td style="color:var(--muted);font-size:12px">0ม.=15 | 1–300ม.=14 | 301–600ม.=12 | 601–900ม.=10 | >1200ม.=6</td></tr>
+      <tr><td>📋 Data Completeness</td><td class="badge-score">15</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:60%"></div></div></td><td style="color:var(--muted);font-size:12px">ครบ 8 fields = 15 | Pro-rata ตาม field ที่มี</td></tr>
+      <tr><td>✨ Uniqueness / Experience</td><td class="badge-score">10</td><td><div class="score-bar-wrap"><div class="score-bar-fill" style="width:40%"></div></div></td><td style="color:var(--muted);font-size:12px">Rating≥4.8 & Reviews≥500=10 | ≥4.7 & ≥200=9 | ≥4.5=7</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="top10">
+  <div class="section-label">06 — Top 10 Ranking</div>
+  <div class="section-title">จัดอันดับ Top 10 ต่อย่าน</div>
+  <div class="area-tabs" id="tabs10">
+    <button class="area-tab active" onclick="showArea('สยาม',this,'tabs10')">🏬 สยาม</button>
+    <button class="area-tab" onclick="showArea('อโศก',this,'tabs10')">🏙️ อโศก</button>
+    <button class="area-tab" onclick="showArea('พร้อมพงษ์',this,'tabs10')">💎 พร้อมพงษ์</button>
+    <button class="area-tab" onclick="showArea('ทองหล่อ',this,'tabs10')">🍷 ทองหล่อ</button>
+    <button class="area-tab" onclick="showArea('อารีย์',this,'tabs10')">🌿 อารีย์</button>
+  </div>
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead><tr><th>#</th><th>ชื่อร้าน</th><th>ประเภทอาหาร</th><th>Rating (รีวิว)</th><th>ราคา/คน</th><th>Rating &amp; Review</th><th>Group Fit</th><th>Price Fit</th><th>Travel</th><th>Completeness</th><th>Uniqueness</th><th>รวม</th></tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SCENARIO SECTION -->
+<section id="scenario">
+  <div class="section-label">07 — Scenario Recommendation</div>
+  <div class="section-title">แนะนำตาม Scenario</div>
+
+  <div class="area-tabs" id="tabsSC_area">
+    <button class="area-tab active" onclick="setScArea('สยาม',this)">🏬 สยาม</button>
+    <button class="area-tab" onclick="setScArea('อโศก',this)">🏙️ อโศก</button>
+    <button class="area-tab" onclick="setScArea('พร้อมพงษ์',this)">💎 พร้อมพงษ์</button>
+    <button class="area-tab" onclick="setScArea('ทองหล่อ',this)">🍷 ทองหล่อ</button>
+    <button class="area-tab" onclick="setScArea('อารีย์',this)">🌿 อารีย์</button>
+  </div>
+
+  <div class="scenario-section">
+    <div class="scenario-tabs" id="scTabs">
+      <button class="sc-tab active" data-sc="safe" onclick="setScenario('safe',this)"><span class="sc-tab-icon">🛡️</span>ปลอดภัยสุด<span style="font-size:11px;opacity:.7;font-weight:400">rating สูง + รีวิวเยอะ</span></button>
+      <button class="sc-tab" data-sc="budget" onclick="setScenario('budget',this)"><span class="sc-tab-icon">💰</span>ประหยัด<span style="font-size:11px;opacity:.7;font-weight:400">ราคาต่ำ คุ้มค่า</span></button>
+      <button class="sc-tab" data-sc="quick" onclick="setScenario('quick',this)"><span class="sc-tab-icon">⚡</span>รีบกิน<span style="font-size:11px;opacity:.7;font-weight:400">บริการเร็ว ใช้เวลาน้อย</span></button>
+      <button class="sc-tab" data-sc="work" onclick="setScenario('work',this)"><span class="sc-tab-icon">💼</span>คุยงานได้<span style="font-size:11px;opacity:.7;font-weight:400">เงียบ + บรรยากาศเหมาะประชุม</span></button>
+      <button class="sc-tab" data-sc="group" onclick="setScenario('group',this)"><span class="sc-tab-icon">👥</span>ทีม 8–12 คน<span style="font-size:11px;opacity:.7;font-weight:400">ใช้ใหญ่ รองรับกลุ่ม</span></button>
+    </div>
+    <div class="sc-desc" id="scDesc"></div>
+    <div class="scenario-cards" id="scCards"></div>
+  </div>
+</section>
+
+<section id="top3">
+  <div class="section-label">08 — Top 3 Recommendation</div>
+  <div class="section-title">แนะนำ Top 3 ต่อย่าน (Overall Score)</div>
+  <div class="area-tabs" id="tabs3">
+    <button class="area-tab active" onclick="showTop3('สยาม',this)">🏬 สยาม</button>
+    <button class="area-tab" onclick="showTop3('อโศก',this)">🏙️ อโศก</button>
+    <button class="area-tab" onclick="showTop3('พร้อมพงษ์',this)">💎 พร้อมพงษ์</button>
+    <button class="area-tab" onclick="showTop3('ทองหล่อ',this)">🍷 ทองหล่อ</button>
+    <button class="area-tab" onclick="showTop3('อารีย์',this)">🌿 อารีย์</button>
+  </div>
+  <div class="top3-grid" id="top3Grid"></div>
+</section>
+
+<section id="compare">
+  <div class="section-label">09 — Restaurant Comparison</div>
+  <div class="section-title">เปรียบเทียบ Trade-off Top 3</div>
+  <div class="area-tabs" id="tabsC">
+    <button class="area-tab active" onclick="showCompare('สยาม',this)">🏬 สยาม</button>
+    <button class="area-tab" onclick="showCompare('อโศก',this)">🏙️ อโศก</button>
+    <button class="area-tab" onclick="showCompare('พร้อมพงษ์',this)">💎 พร้อมพงษ์</button>
+    <button class="area-tab" onclick="showCompare('ทองหล่อ',this)">🍷 ทองหล่อ</button>
+    <button class="area-tab" onclick="showCompare('อารีย์',this)">🌿 อารีย์</button>
+  </div>
+  <div class="compare-grid" id="compareGrid"></div>
+</section>
+
+<footer style="padding:36px 5vw;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:var(--surface2)">
+  <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">AI Food Decision Assistant · 7 June 2025 · By GP: Pom</span>
+  <span style="font-size:11px;color:var(--muted)">ข้อมูลจาก Google Maps via Apify · Scoring by Python · Built with Claude AI</span>
+</footer>
+
+<script>
+const DATA = {"สยาม": [{"name": "Hongdae", "foodType": "ภัตตาคารอาหารบุฟเฟต์", "foodTypeNorm": "บุฟเฟต์", "rating": 4.8, "reviews": 5855, "priceRange": "฿400-600", "priceMid": 500.0, "address": "Unit #SS 5018 - 19, 388 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 64 165 7175", "score": 100, "s1": 25, "s2": 20, "s3": 15, "s4": 15, "s5": 15, "s6": 10}, {"name": "จากึมซอง สยามสแควร์ วัน", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.9, "reviews": 3473, "priceRange": "฿200-400", "priceMid": 300.0, "address": "388 ชั้น 5 ห้องเลขที่ ss5016 อาคารสยามสแควร์วัน ิ, เขตปทุมวัน", "distNote": "BTS สยาม | 100 ม. (~1 นาทีเดิน)", "distM": 100, "hours": "ทุกวัน 11:00–21:30", "phone": "+66 66 156 4426", "score": 97, "s1": 25, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 10}, {"name": "Tonkotsu Kazan Ramen (Siam Center)", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 1902, "priceRange": "฿200-400", "priceMid": 300.0, "address": "979 Siam Center ชั้นที่ 2 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 50 ม. (~1 นาทีเดิน)", "distM": 50, "hours": "ทุกวัน 10:00–21:00", "phone": "+66 2 047 9959", "score": 92, "s1": 23, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 10}, {"name": "บ้านไอซ์", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.9, "reviews": 2886, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "991 ศูนย์การค้าสยามพารากอน ชั้น 4, เขตปทุมวัน", "distNote": "BTS สยาม | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 2 127 0335", "score": 92, "s1": 23, "s2": 17, "s3": 12, "s4": 15, "s5": 15, "s6": 10}, {"name": "Piranya@Siam (ปิรันย่า@สยาม)", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 1463, "priceRange": "฿1-200", "priceMid": 100.5, "address": "430/27 สยามสแควร์ ซอย 9 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "จ.–ส. 10:45–20:00 | อา. 10:45–19:30", "phone": "+66 2 252 7195", "score": 91, "s1": 23, "s2": 17, "s3": 11, "s4": 15, "s5": 15, "s6": 10}, {"name": "White Flower Factory - ครัวดอกไม้ขาว", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.6, "reviews": 1521, "priceRange": "฿400-600", "priceMid": 500.0, "address": "Unit #SS 4009, 388 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 99 002 0897", "score": 90, "s1": 21, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Tonchin Ramen - Siam Paragon", "foodType": "ร้านอาหารราเมน", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.7, "reviews": 1146, "priceRange": "฿200-400", "priceMid": 300.0, "address": "ชั้น G สยามพารากอน 991 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 61 491 5558", "score": 89, "s1": 21, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 9}, {"name": "Shichi Japanese Restaurant - Chidlom", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 658, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "เซ็นทรัลชิดลม โซน public lane, ชั้น 1, เขตปทุมวัน", "distNote": "BTS สยาม | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 65 597 7444", "score": 87, "s1": 21, "s2": 14, "s3": 12, "s4": 15, "s5": 15, "s6": 10}, {"name": "Breakfast Story", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.6, "reviews": 1839, "priceRange": "฿200-400", "priceMid": 300.0, "address": "888, Mahatun Plaza, 3rd Floor (above Blue Cheri, 34-35 ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 7:00–23:00", "phone": "+66 2 494 9188", "score": 87, "s1": 21, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "ข้าวต้มกุ๊ยโกดังข้าว Kodungkhao Rice Porridge", "foodType": "ร้านข้าวต้ม", "foodTypeNorm": "ก๋วยเตี๋ยว", "rating": 4.7, "reviews": 329, "priceRange": "฿200-400", "priceMid": 300.0, "address": "888/51-52 Ploenchit Rd Mahatun Plaza, เขตปทุมวัน", "distNote": "BTS สยาม | ระยะไม่ระบุ", "distM": null, "hours": "จ.–ศ. 11:00–22:00 | ส. 11:00–18:30 | อา. ปิดทำการ", "phone": "+66 89 222 9180", "score": 85, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 9}, {"name": "วัวนู้ด ก๋วยเตี๋ยวเนื้อพรีเมี่ยม", "foodType": "ร้านก๋วยเตี๋ยว", "foodTypeNorm": "ก๋วยเตี๋ยว", "rating": 4.5, "reviews": 617, "priceRange": "฿200-400", "priceMid": 300.0, "address": "888/51-52 อาคารมหาทุนพลาซ่า, ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "จ.–ศ. 11:00–20:30 | ส. 11:00–18:30 | อา. ปิดทำการ", "phone": "+66 89 222 9180", "score": 85, "s1": 19, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Kogoro Katsu - Siam Square", "foodType": "ภัตตาคารอาหารทงคัทสึ", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.6, "reviews": 678, "priceRange": "฿200-400", "priceMid": 300.0, "address": "430 40 ชั้น2 สยามสแควร์ ซอย 7, เขตปทุมวัน", "distNote": "BTS สยาม | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:30–22:00", "phone": "+66 2 115 6153", "score": 85, "s1": 19, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "หงเปา", "foodType": "ภัตตาคารอาหารจีน", "foodTypeNorm": "อาหารจีน", "rating": 4.5, "reviews": 1039, "priceRange": "฿600-1,400", "priceMid": 1000.0, "address": "ชั้น 5, Central Embassy, 1031 ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 400 ม. (~5 นาทีเดิน)", "distM": 400, "hours": "ทุกวัน 10:00–21:00", "phone": "+66 65 254 4662", "score": 84, "s1": 21, "s2": 17, "s3": 9, "s4": 15, "s5": 15, "s6": 7}, {"name": "Kam's Roast Express", "foodType": "ภัตตาคารอาหารจีนกวางตุ้ง", "foodTypeNorm": "อาหารจีน", "rating": 4.5, "reviews": 84, "priceRange": "฿200-400", "priceMid": 300.0, "address": "1st floor, 1027, 115 ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 93 052 5225", "score": 84, "s1": 15, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "ร้านรามยอน", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.6, "reviews": 415, "priceRange": "฿200-400", "priceMid": 300.0, "address": "991/1 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 93 235 5222", "score": 83, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Ñam Ñam Pasta and Tapas (Central Embassy)", "foodType": "ร้านอาหารอิตาเลียน", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.5, "reviews": 442, "priceRange": "฿200-600", "priceMid": 400.0, "address": "1031 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 98 829 7434", "score": 83, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "JUMBO Seafood", "foodType": "ภัตตาคารอาหารทะเล", "foodTypeNorm": "อาหารทะเล", "rating": 4.7, "reviews": 1360, "priceRange": "฿1,000+", "priceMid": 1500.0, "address": "สยามพารากอน 991/1 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS สยาม | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 2 162 0520", "score": 83, "s1": 21, "s2": 17, "s3": 6, "s4": 15, "s5": 15, "s6": 9}, {"name": "ENISHI Thailand", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.6, "reviews": 200, "priceRange": "฿200-600", "priceMid": 400.0, "address": "ชั้น 2 ยูนิต R2 โอซีซี - วัน ซิตี้ เซ็นเตอร์ 10 ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 11:00–15:00, 17:30–21:00", "phone": "+66 63 815 6633", "score": 83, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Bangkok Bold Kitchen at Central Embassy", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.3, "reviews": 327, "priceRange": "฿200-800", "priceMid": 500.0, "address": "1031 ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 91 424 4292", "score": 82, "s1": 15, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 5}, {"name": "Din Tai Fung Central Embassy", "foodType": "ภัตตาคารอาหารไต้หวัน", "foodTypeNorm": "อาหารจีน", "rating": 4.5, "reviews": 1786, "priceRange": "฿400-1,600", "priceMid": 1000.0, "address": "546/4 5 Floor, ถนน เพลินจิต, เขตปทุมวัน", "distNote": "BTS สยาม | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 2 160 5917", "score": 81, "s1": 21, "s2": 14, "s3": 9, "s4": 15, "s5": 15, "s6": 7}], "อโศก": [{"name": "TUBA Bar & Restaurant", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 3946, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "34 ซ. เอกมัย 21, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1890 ม. (~24 นาที / แนะนำนั่ง taxi)", "distM": 1890, "hours": "ทุกวัน 9:30–2:00", "phone": "+66 2 711 5500", "score": 90, "s1": 19, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 9}, {"name": "gogiseki", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.7, "reviews": 720, "priceRange": "฿400-600", "priceMid": 500.0, "address": "147 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1620 ม. (~20 นาที / แนะนำนั่ง taxi)", "distM": 1620, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 83 073 4756", "score": 89, "s1": 23, "s2": 17, "s3": 12, "s4": 15, "s5": 15, "s6": 7}, {"name": "สมยงตำซั่ว สุขุมวิท-อโศก", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.7, "reviews": 754, "priceRange": "฿200-400", "priceMid": 300.0, "address": "44/4 ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:30–22:30", "phone": "+66 96 169 6269", "score": 85, "s1": 25, "s2": 17, "s3": 12, "s4": 6, "s5": 15, "s6": 10}, {"name": "เสวย เทอร์มินอล 21 อโศก", "foodType": "ภัตตาคารอาหารทะเล", "foodTypeNorm": "อาหารทะเล", "rating": 4.6, "reviews": 3622, "priceRange": "฿200-1,200", "priceMid": 700.0, "address": "ห้องเลขที่ SH-5 ศูนย์การค้าเทอร์มินอล 21 015 ชั้นที่ 5 อโศก 88, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 64 017 0237", "score": 84, "s1": 19, "s2": 20, "s3": 15, "s4": 6, "s5": 15, "s6": 9}, {"name": "ร.เรือ ทองหล่อ", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.5, "reviews": 534, "priceRange": "฿200-400", "priceMid": 300.0, "address": "เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:00–21:00", "phone": "+66 2 185 1482", "score": 84, "s1": 19, "s2": 17, "s3": 12, "s4": 14, "s5": 15, "s6": 7}, {"name": "ณ อรุณ", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.5, "reviews": 626, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "65 สุขุมวิท ซ. 1, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1800 ม. (~22 นาที / แนะนำนั่ง taxi)", "distM": 1800, "hours": "จ.อ. 7:00–11:00, 11:30–21:30 | พ. 7:00–21:30 | พฤ.–ส. 7:00–11:00, 11:30–21:30 | อา. 7:00–11:00, 12:00–21:30", "phone": "+66 2 254 8880", "score": 84, "s1": 21, "s2": 14, "s3": 12, "s4": 15, "s5": 15, "s6": 7}, {"name": "Dae Jang Gum", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.6, "reviews": 703, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "Prasanmit Plaza, 2-3rd Floor, ซ. สุขุมวิท 23, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 180 ม. (~2 นาทีเดิน)", "distM": 180, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 2 664 1558", "score": 83, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Shakariki 432 ASOKE", "foodType": "ร้านอาหารอิซาคายะ", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.5, "reviews": 1296, "priceRange": "฿200-1,400", "priceMid": 800.0, "address": "อาคารพี เอส ทาวเวอร์ 36/1-2 ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:00–4:00", "phone": "+66 2 664 0927", "score": 83, "s1": 17, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "Miyagi", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.6, "reviews": 1173, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "2F.CITI RESORT SUKHMVIT39 79 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1620 ม. (~20 นาที / แนะนำนั่ง taxi)", "distM": 1620, "hours": "จ.–ศ. 11:30–14:00, 16:30–21:00 | ส.อา. 10:30–14:00, 16:30–21:00", "phone": "+66 61 417 2910", "score": 82, "s1": 17, "s2": 14, "s3": 12, "s4": 15, "s5": 15, "s6": 9}, {"name": "แมดโมอา อโศก Mad moa asok", "foodType": "ร้านอาหารตะวันตก", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 159, "priceRange": "฿400-600", "priceMid": 500.0, "address": "139 สุขุมวิท 21 ซอย 1, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "จ.–ศ. 11:00–14:00, 17:00–22:00 | ส. 17:00–22:00 | อา. ปิดทำการ", "phone": "+66 95 720 3826", "score": 81, "s1": 21, "s2": 17, "s3": 6, "s4": 15, "s5": 15, "s6": 7}, {"name": "แสนสำราญ ณ ธารศิลป์", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.6, "reviews": 392, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "177 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1620 ม. (~20 นาที / แนะนำนั่ง taxi)", "distM": 1620, "hours": "จ. ปิดทำการ | อ.–อา. 11:30–22:00", "phone": "+66 64 630 1270", "score": 81, "s1": 21, "s2": 17, "s3": 9, "s4": 14, "s5": 15, "s6": 5}, {"name": "เคนชิน อิซากายะ สาขาอโศก", "foodType": "ร้านอาหารอิซาคายะ", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.3, "reviews": 1693, "priceRange": "฿400-600", "priceMid": 500.0, "address": "155 ถนน อโศกมนตรี, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:00–0:00", "phone": "+66 2 661 6202", "score": 79, "s1": 19, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 7}, {"name": "NICO NICO - Café & Brunch Place", "foodType": "ภัตตาคารอาหารเช้าและกลางวัน", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.5, "reviews": 425, "priceRange": "฿200-400", "priceMid": 300.0, "address": "555, ตึก DM Home ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 7:00–16:00", "phone": "+66 97 054 6827", "score": 77, "s1": 19, "s2": 14, "s3": 6, "s4": 14, "s5": 15, "s6": 9}, {"name": "Dongdaemun", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.5, "reviews": 379, "priceRange": "฿200-1,200", "priceMid": 700.0, "address": "36 ถนน อโศกมนตรี, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:30–22:30", "phone": "+66 99 615 0007", "score": 77, "s1": 17, "s2": 14, "s3": 9, "s4": 15, "s5": 15, "s6": 7}, {"name": "Hokkaido Yakidon Baan Kampu Asoke", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 66, "priceRange": "฿200-300", "priceMid": 250.0, "address": "ชั้น 2, โครงการบ้านก้ามปู อโศก, Baan Kampu Asoke 2nd floor, 68 ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "จ.–ศ. 11:00–21:00 | ส. ปิดทำการ | อา. 11:00–20:00", "phone": "+66 91 772 9358", "score": 76, "s1": 19, "s2": 17, "s3": 12, "s4": 6, "s5": 15, "s6": 7}, {"name": "ต้นเครื่อง", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.2, "reviews": 1399, "priceRange": "฿200-800", "priceMid": 500.0, "address": "211 สุขุมวิท 49, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 2520 ม. (~32 นาที / แนะนำนั่ง taxi)", "distM": 2520, "hours": "ทุกวัน 11:00–22:30", "phone": "+66 2 185 3072", "score": 75, "s1": 23, "s2": 14, "s3": 6, "s4": 10, "s5": 15, "s6": 7}, {"name": "อรรถรส", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.4, "reviews": 1160, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "59/3 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 1620 ม. (~20 นาที / แนะนำนั่ง taxi)", "distM": 1620, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 64 249 4244", "score": 75, "s1": 21, "s2": 14, "s3": 12, "s4": 6, "s5": 15, "s6": 7}, {"name": "LIB STORY Thai BBQ & Local Food", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.7, "reviews": 362, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "139, ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ทางออกตรง (0 ม.)", "distM": 0, "hours": "จ.–ศ. 11:00–14:00, 16:30–0:00 | ส.อา. 16:30–0:00", "phone": "+66 89 962 0340", "score": 74, "s1": 17, "s2": 14, "s3": 15, "s4": 6, "s5": 15, "s6": 7}, {"name": "เดอะ โลคอล", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.4, "reviews": 3283, "priceRange": "฿600-1,800", "priceMid": 1200.0, "address": "32 32/1 ซ. สุขุมวิท 23, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | 180 ม. (~2 นาทีเดิน)", "distM": 180, "hours": "ทุกวัน 11:30–22:30", "phone": "+66 2 664 0664", "score": 74, "s1": 19, "s2": 14, "s3": 15, "s4": 6, "s5": 15, "s6": 5}, {"name": "Taye Ethiopian Restaurant", "foodType": "ภัตตาคารอาหารเอธิโอเปีย", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.6, "reviews": 624, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "40/1-3 ซอย นานาใต้, เขตวัฒนา", "distNote": "BTS อโศก / MRT สุขุมวิท | ระยะไม่ระบุ", "distM": null, "hours": "จ.อ. 11:00–23:00 | พ.–อา. 11:00–2:00", "phone": "+66 84 930 3250", "score": 74, "s1": 17, "s2": 17, "s3": 12, "s4": 6, "s5": 15, "s6": 7}], "พร้อมพงษ์": [{"name": "Kodtalay Seafood Buffet rca rama 9", "foodType": "ภัตตาคารอาหารทะเล", "foodTypeNorm": "อาหารทะเล", "rating": 4.8, "reviews": 9075, "priceRange": "฿400-600", "priceMid": 500.0, "address": "888 ถนน จตุรทิศ, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "จ.–ศ. 17:00–5:00 | ส.อา. 16:00–5:00", "phone": "+66 64 929 1991", "score": 91, "s1": 25, "s2": 17, "s3": 12, "s4": 12, "s5": 15, "s6": 10}, {"name": "Korea Holic", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.9, "reviews": 1044, "priceRange": "฿200-400", "priceMid": 300.0, "address": "255 ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 1080 ม. (~14 นาที / แนะนำนั่ง taxi)", "distM": 1080, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 84 237 5367", "score": 90, "s1": 19, "s2": 20, "s3": 15, "s4": 12, "s5": 15, "s6": 9}, {"name": "ครัวเจียงใหม่ - ทองหล่อ", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 2758, "priceRange": "฿200-400", "priceMid": 300.0, "address": "125 24 ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–1:00", "phone": "+66 99 196 2464", "score": 89, "s1": 25, "s2": 14, "s3": 15, "s4": 10, "s5": 15, "s6": 10}, {"name": "กินกิน สุขุมวิท 47", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 2275, "priceRange": "฿400-600", "priceMid": 500.0, "address": "เลขที่ 855, ปาก ถ. สุขุมวิท, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:30–22:30", "phone": "+66 85 551 9956", "score": 89, "s1": 21, "s2": 20, "s3": 12, "s4": 12, "s5": 15, "s6": 9}, {"name": "ซูชินะ - สาขาฟอร์จูนทาวน์", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 3063, "priceRange": "฿200-400", "priceMid": 300.0, "address": "ชั้น1, หน้าโรงแรม​ AVANI​ ตรงข้ามธนาคารกรุงศรี, ศูนย์การค้าฟอร์จูนทาวน์, 5 ถ. รัชดาภิเษก, เขตดินแดง", "distNote": "BTS พร้อมพงษ์ | 900 ม. (~11 นาที / แนะนำนั่ง taxi)", "distM": 900, "hours": "ทุกวัน 11:00–21:00", "phone": "+66 65 543 5449", "score": 88, "s1": 25, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "BORNGA THAILAND", "foodType": "ร้านเนื้อย่างเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.8, "reviews": 4134, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "ชั้น 2, บูเลอวาร์ด ทาวเวอร์, ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 540 ม. (~7 นาทีเดิน)", "distM": 540, "hours": "ทุกวัน 11:30–15:00, 17:30–22:00", "phone": "+66 2 160 0095", "score": 88, "s1": 23, "s2": 17, "s3": 15, "s4": 8, "s5": 15, "s6": 10}, {"name": "ไหตี่เลา เซ็นทรัลพระราม9", "foodType": "ร้านอาหารกระทะร้อน", "foodTypeNorm": "อาหารจีน", "rating": 4.8, "reviews": 4370, "priceRange": "฿600-1,600", "priceMid": 1100.0, "address": "7th floor, Central Rama9 ชั้น 7 เซ็นทรัล ถ. พระราม 9, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | 1600 ม. (~20 นาที / แนะนำนั่ง taxi)", "distM": 1600, "hours": "ทุกวัน 10:00–3:00", "phone": "+66 2 029 1775", "score": 87, "s1": 23, "s2": 14, "s3": 15, "s4": 10, "s5": 15, "s6": 10}, {"name": "เฟยเฟย หม่าล่าทัง (Fei Fei Ma La Tang Ratchada 3) 飞飞麻辣烫", "foodType": "ภัตตาคารอาหารจีน", "foodTypeNorm": "อาหารจีน", "rating": 4.9, "reviews": 3406, "priceRange": "฿1-200", "priceMid": 100.5, "address": "ถ. พระราม 9, เขตดินแดง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:00–2:00", "phone": "+66 85 816 9189", "score": 87, "s1": 21, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 7}, {"name": "gogiseki", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.7, "reviews": 720, "priceRange": "฿400-600", "priceMid": 500.0, "address": "147 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 540 ม. (~7 นาทีเดิน)", "distM": 540, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 83 073 4756", "score": 87, "s1": 19, "s2": 14, "s3": 15, "s4": 15, "s5": 15, "s6": 9}, {"name": "Fish Corner , Fish&Chips and Seafood dishes (Bang Rak)", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 2072, "priceRange": "฿200-400", "priceMid": 300.0, "address": "88/2, 88/9 ซอยสุขุมวิท 24 ถนนสุขุมวิท แขวงคลองตัน, เขตคลองเตย", "distNote": "BTS พร้อมพงษ์ | 810 ม. (~10 นาที / แนะนำนั่ง taxi)", "distM": 810, "hours": "ทุกวัน 12:00–2:00", "phone": "+66 81 584 8039", "score": 86, "s1": 23, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "โชริว ราเมง ถนนเพชรบุรีตัดใหม่", "foodType": "ร้านอาหารราเมน", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 2454, "priceRange": "฿200-400", "priceMid": 300.0, "address": "1938/1 ถ. เพชรบุรี, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–4:30", "phone": "+66 95 625 6299", "score": 86, "s1": 23, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "Moom Muum Park Soi 11", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 2548, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "20 ซ. สุขุมวิท 11, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 1980 ม. (~25 นาที / แนะนำนั่ง taxi)", "distM": 1980, "hours": "ทุกวัน 15:00–3:00", "phone": "+66 64 931 1393", "score": 86, "s1": 19, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 9}, {"name": "SURA Korean BBQ_by Korean Chef", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.7, "reviews": 2164, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "32/1 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 540 ม. (~7 นาทีเดิน)", "distM": 540, "hours": "ทุกวัน 11:30–22:30", "phone": "+66 2 077 9263", "score": 85, "s1": 19, "s2": 20, "s3": 12, "s4": 12, "s5": 15, "s6": 7}, {"name": "โชริว ราเมง สุขุมวิท 24", "foodType": "ร้านอาหารราเมน", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 990, "priceRange": "฿200-400", "priceMid": 300.0, "address": "2825, Bangchak station, 19 ถ. พระรามที่ 4, เขตคลองเตย", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–4:30", "phone": "+66 64 515 2699", "score": 85, "s1": 25, "s2": 20, "s3": 9, "s4": 6, "s5": 15, "s6": 10}, {"name": "Savory Malatang小食记(G Tower)", "foodType": "ภัตตาคารอาหารจีน", "foodTypeNorm": "อาหารจีน", "rating": 4.7, "reviews": 608, "priceRange": "฿200-400", "priceMid": 300.0, "address": "No.9 G Tower Grand Rama 9 B Floor Room B03 ถ. พระราม 9, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "จ.–ศ. 11:00–20:30 | ส.อา. 11:00–20:00", "phone": "+66 63 516 8006", "score": 84, "s1": 25, "s2": 17, "s3": 11, "s4": 6, "s5": 15, "s6": 10}, {"name": "Simmer by Praha - Singha Complex", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.9, "reviews": 825, "priceRange": "฿200-400", "priceMid": 300.0, "address": "2nd Fl., Singha Complex, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:00–21:00", "phone": "+66 64 985 1351", "score": 84, "s1": 21, "s2": 14, "s3": 15, "s4": 12, "s5": 15, "s6": 7}, {"name": "แนแน บาร์บีคิว บุฟเฟต์อาหารเกาหลี (รัชดา)", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.3, "reviews": 1283, "priceRange": "฿200-400", "priceMid": 300.0, "address": "332 85 ซ. รัชดาภิเษก 3 แยก 4, เขตดินแดง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–23:00", "phone": "+66 95 560 8735", "score": 83, "s1": 23, "s2": 14, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "ฮั่วเซ่งฮง เซ็นทรัล พระราม9", "foodType": "ภัตตาคารอาหารจีน", "foodTypeNorm": "อาหารจีน", "rating": 4.7, "reviews": 2009, "priceRange": "฿200-1,200", "priceMid": 700.0, "address": "ถ. พระราม 9, เขตห้วยขวาง", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 2 160 2484", "score": 83, "s1": 21, "s2": 14, "s3": 12, "s4": 12, "s5": 15, "s6": 9}, {"name": "ปิ้งเนย สาขาอโศก On-The-Roof", "foodType": "ภัตตาคารอาหารบุฟเฟต์", "foodTypeNorm": "บุฟเฟต์", "rating": 4.6, "reviews": 477, "priceRange": "฿200-400", "priceMid": 300.0, "address": "โครงการ The Kross, 1624 ถ. เพชรบุรี, เขตราชเทวี", "distNote": "BTS พร้อมพงษ์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 16:00–23:00", "phone": "+66 62 694 1556", "score": 83, "s1": 23, "s2": 17, "s3": 12, "s4": 6, "s5": 15, "s6": 10}, {"name": "COCA Sukhumvit 39 (โคคา สุขุมวิท 39)", "foodType": "ร้านอาหารสุกี้ยากี้", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.5, "reviews": 725, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "1, 1-5 ซ. สุขุมวิท 39, เขตวัฒนา", "distNote": "BTS พร้อมพงษ์ | 540 ม. (~7 นาทีเดิน)", "distM": 540, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 2 259 8188", "score": 82, "s1": 19, "s2": 14, "s3": 15, "s4": 10, "s5": 15, "s6": 9}], "ทองหล่อ": [{"name": "เอสโอเอส บุฟเฟต์ชาบู สาขาบางจาก", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 525, "priceRange": "฿200-400", "priceMid": 300.0, "address": "2423 ซอย สุขุมวิท 97/1, เขตพระโขนง", "distNote": "BTS ทองหล่อ | 3780 ม. (~47 นาที / แนะนำนั่ง taxi)", "distM": 3780, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 83 791 4472", "score": 95, "s1": 23, "s2": 17, "s3": 15, "s4": 15, "s5": 15, "s6": 10}, {"name": "จง หม่าล่าสายพาน", "foodType": "ร้านอาหารกระทะร้อน", "foodTypeNorm": "อาหารจีน", "rating": 4.9, "reviews": 767, "priceRange": "฿200-400", "priceMid": 300.0, "address": "562, 2 ถ. สวนพลู, เขตสาทร", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–0:00", "phone": "+66 98 789 2652", "score": 93, "s1": 25, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 10}, {"name": "ครัวเจียงใหม่ - ทองหล่อ", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 2758, "priceRange": "฿200-400", "priceMid": 300.0, "address": "125 24 ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–1:00", "phone": "+66 99 196 2464", "score": 93, "s1": 21, "s2": 20, "s3": 12, "s4": 15, "s5": 15, "s6": 10}, {"name": "แกงสด", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.9, "reviews": 1768, "priceRange": "฿400-600", "priceMid": 500.0, "address": "ชั้น 3 One Bangkok, เขตปทุมวัน", "distNote": "BTS ทองหล่อ | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 62 291 4691", "score": 91, "s1": 23, "s2": 20, "s3": 9, "s4": 14, "s5": 15, "s6": 10}, {"name": "키아니 한식당 통로 본점 Kiani Korean Restaurant Thonglor ร้านอาหารเกาหลี 韩国餐厅 Thonglor", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.8, "reviews": 1266, "priceRange": "฿200-400", "priceMid": 300.0, "address": "90 Fifty fifth Thonglor Building ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "จ.–ส. 11:00–21:30 | อา. 11:00–20:00", "phone": "+66 84 220 8282", "score": 91, "s1": 21, "s2": 20, "s3": 12, "s4": 14, "s5": 15, "s6": 9}, {"name": "Mo-Mo-Paradise One Bangkok", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 1010, "priceRange": "฿600-800", "priceMid": 700.0, "address": "ชั้น 5 ถ. พระรามที่ 4, เขตปทุมวัน", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 93 321 2562", "score": 91, "s1": 25, "s2": 14, "s3": 15, "s4": 12, "s5": 15, "s6": 10}, {"name": "ข้าวโซอิ KHAO-SO-i Convent Silom", "foodType": "ร้านก๋วยเตี๋ยว", "foodTypeNorm": "ก๋วยเตี๋ยว", "rating": 4.8, "reviews": 4601, "priceRange": "฿200-400", "priceMid": 300.0, "address": "14/2-3 ถ. คอนแวนต์, เขตบางรัก", "distNote": "BTS ทองหล่อ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "จ.–ศ. 10:30–21:00 | ส.อา. 10:00–21:00", "phone": "+66 62 591 3791", "score": 89, "s1": 21, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 10}, {"name": "พาสต้าอาม่า ศาลาแดง", "foodType": "ร้านอาหารฟิวชั่น", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.9, "reviews": 3585, "priceRange": "฿200-400", "priceMid": 300.0, "address": "บ้านเค เรสซิเดนซ์ 12/1 ชั้นที่ 2 ซอย สาทร 2, เขตสาทร", "distNote": "BTS ทองหล่อ | 400 ม. (~5 นาทีเดิน)", "distM": 400, "hours": "ทุกวัน 8:00–22:00", "phone": "+66 64 683 8539", "score": 88, "s1": 23, "s2": 17, "s3": 9, "s4": 14, "s5": 15, "s6": 10}, {"name": "Xiao Fuwang Pavillion", "foodType": "ร้านอาหารกระทะร้อน", "foodTypeNorm": "อาหารจีน", "rating": 4.8, "reviews": 685, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "One Bangkok 5th Floor, Zone Parade, ถ. พระรามที่ 4, เขตปทุมวัน", "distNote": "BTS ทองหล่อ | ทางออกตรง (0 ม.)", "distM": 0, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 88 985 7230", "score": 87, "s1": 21, "s2": 14, "s3": 12, "s4": 15, "s5": 15, "s6": 10}, {"name": "You&I Premium Suki Buffet Marché Thonglor 2nd Floor", "foodType": "ภัตตาคารอาหารบุฟเฟต์", "foodTypeNorm": "บุฟเฟต์", "rating": 4.8, "reviews": 583, "priceRange": "฿400-1,000", "priceMid": 700.0, "address": "150 - 150/9, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–22:00", "phone": "+66 94 232 0555", "score": 87, "s1": 21, "s2": 20, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "HITORI SHABU สาขา Marché Thonglor", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 1287, "priceRange": "฿400-1,400", "priceMid": 900.0, "address": "2nd Fl Marché Thonglor 148 ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 64 154 9159", "score": 87, "s1": 21, "s2": 20, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "Tonkatsu AOKI @ Velaa Sindhorn Village Langsuan", "foodType": "ภัตตาคารอาหารญี่ปุ่น", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 1769, "priceRange": "฿400-600", "priceMid": 500.0, "address": "B1, 87 ถ. หลังสวน, เขตปทุมวัน", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–21:00", "phone": "+66 97 479 6425", "score": 87, "s1": 21, "s2": 14, "s3": 12, "s4": 15, "s5": 15, "s6": 10}, {"name": "โมโม่ พาราไดซ์ สีลมคอมเพล็กซ์ ชั้นใต้ดิน", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.7, "reviews": 1375, "priceRange": "฿600-800", "priceMid": 700.0, "address": "191 อาคารศูนย์การค้า สีลมคอมเพล็กซ์ ชั้นใต้ดิน ห้อง บี 02 ถ.สีลม, เขตบางรัก", "distNote": "BTS ทองหล่อ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 92 250 5983", "score": 86, "s1": 23, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "SHABU K HOTPOT MALA ชาบู ฮอตพอต หม่าล่า สายพาน 火鍋麻辣", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.7, "reviews": 233, "priceRange": "฿200-400", "priceMid": 300.0, "address": "2/10 ซอย ศรีบำเพ็ญ, เขตสาทร", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–23:00", "phone": "+66 92 770 9988", "score": 86, "s1": 23, "s2": 20, "s3": 12, "s4": 6, "s5": 15, "s6": 10}, {"name": "ฮิโตริ ชาบู", "foodType": "ภัตตาคารอาหารญี่ปุ่นดั้งเดิม", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 3417, "priceRange": "฿400-800", "priceMid": 600.0, "address": "86 ศูนย์การค้าเซ็นทรัล พาร์ค ห้องเลขที่ 506 ชั้นที่ 5 ถ. พระรามที่ 4, เขตบางรัก", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–21:00", "phone": "+66 64 714 2564", "score": 86, "s1": 17, "s2": 20, "s3": 15, "s4": 12, "s5": 15, "s6": 7}, {"name": "FUWANG HOT POT • TEA HOUSE 富王火锅 茶馆", "foodType": "ร้านอาหารกระทะร้อน", "foodTypeNorm": "อาหารจีน", "rating": 4.8, "reviews": 589, "priceRange": "฿400-1,600", "priceMid": 1000.0, "address": "ชั้น 3 อาคาร B ห้อง 301 Marche 150 303 ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–23:30", "phone": "+66 97 335 5535", "score": 86, "s1": 23, "s2": 14, "s3": 9, "s4": 15, "s5": 15, "s6": 10}, {"name": "เอราเมง ราเมงข้อสอบ สีลม", "foodType": "ร้านอาหารราเมน", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 990, "priceRange": "฿200-400", "priceMid": 300.0, "address": "ถ.สีลม, เขตบางรัก", "distNote": "BTS ทองหล่อ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "ทุกวัน เปิด 24 ชั่วโมง", "phone": "+66 82 495 3566", "score": 86, "s1": 23, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "รัตติยาแจ่วฮ้อน สาขาทองหล่อ RattiyaHotpot Thonglor13", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 518, "priceRange": "฿200-400", "priceMid": 300.0, "address": "8 พระโขนง, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:30–5:30", "phone": "+66 96 391 4289", "score": 84, "s1": 21, "s2": 20, "s3": 9, "s4": 10, "s5": 15, "s6": 9}, {"name": "Kimukatsu Thonglor", "foodType": "ภัตตาคารอาหารทงคัทสึ", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.8, "reviews": 964, "priceRange": "฿400-600", "priceMid": 500.0, "address": "ชั้น2, โครงการ มาร์เก็ต เพลส, ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–21:30", "phone": "+66 97 652 4949", "score": 84, "s1": 21, "s2": 20, "s3": 12, "s4": 6, "s5": 15, "s6": 10}, {"name": "9Nine Korean Restaurant", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.9, "reviews": 1060, "priceRange": "฿600-1,600", "priceMid": 1100.0, "address": "Marché Thonglor Zone B 2F 150 ถ. ทองหล่อ, เขตวัฒนา", "distNote": "BTS ทองหล่อ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "ทุกวัน 11:00–15:00, 16:00–23:00", "phone": "+66 81 830 8609", "score": 84, "s1": 17, "s2": 20, "s3": 15, "s4": 12, "s5": 15, "s6": 5}], "อารีย์": [{"name": "Renga sukiyaki (เรนกะ) อารีย์", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.9, "reviews": 3873, "priceRange": "฿200-600", "priceMid": 400.0, "address": "40/1 ซ. พหลโยธิน 7, เขตพญาไท", "distNote": "BTS อารีย์ | 420 ม. (~5 นาทีเดิน)", "distM": 420, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 63 959 8555", "score": 97, "s1": 25, "s2": 20, "s3": 15, "s4": 12, "s5": 15, "s6": 10}, {"name": "Korea Holic", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.9, "reviews": 1044, "priceRange": "฿200-400", "priceMid": 300.0, "address": "255 ซอย สุขุมวิท 21, เขตวัฒนา", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:30–22:00", "phone": "+66 84 237 5367", "score": 94, "s1": 23, "s2": 20, "s3": 12, "s4": 14, "s5": 15, "s6": 10}, {"name": "ซอยข่อยแน อาหารอีสานรสเด็ด", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 1962, "priceRange": "฿200-400", "priceMid": 300.0, "address": "436/8 ซอย พหลโยธิน 12, เขตพญาไท", "distNote": "BTS อารีย์ | 900 ม. (~11 นาที / แนะนำนั่ง taxi)", "distM": 900, "hours": "ทุกวัน 17:00–3:00", "phone": "+66 94 335 3619", "score": 93, "s1": 25, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 10}, {"name": "Onkijung Thailand (온기정) - Central World", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.7, "reviews": 1270, "priceRange": "฿200-400", "priceMid": 300.0, "address": "ชั้น 6 ห้อง B631, ข้างร้านหนังสือ Central World, เขตปทุมวัน", "distNote": "BTS อารีย์ | 1500 ม. (~19 นาที / แนะนำนั่ง taxi)", "distM": 1500, "hours": "ทุกวัน 11:00–22:00", "phone": "", "score": 93, "s1": 23, "s2": 17, "s3": 15, "s4": 14, "s5": 15, "s6": 9}, {"name": "Mo-Mo-Paradise (Platinum Pop)", "foodType": "ภัตตาคารอาหารบุฟเฟต์", "foodTypeNorm": "บุฟเฟต์", "rating": 4.8, "reviews": 1154, "priceRange": "฿600-800", "priceMid": 700.0, "address": "3th FL, 111 ถ. ราชดำริ, เขตปทุมวัน", "distNote": "BTS อารีย์ | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "จ.–ศ. 11:00–21:00 | ส.อา. 10:00–21:00", "phone": "+66 61 412 3155", "score": 92, "s1": 21, "s2": 20, "s3": 12, "s4": 14, "s5": 15, "s6": 10}, {"name": "โกปี๊ฮับ ไพรม์ อารีย์", "foodType": "ภัตตาคารอาหารติ่มซำ", "foodTypeNorm": "อาหารจีน", "rating": 4.8, "reviews": 3431, "priceRange": "฿200-400", "priceMid": 300.0, "address": "33 ซอย อารีย์ 2, เขตพญาไท", "distNote": "BTS อารีย์ | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "จ.–ศ. 9:00–21:00 | ส.อา. 7:00–21:00", "phone": "", "score": 90, "s1": 23, "s2": 17, "s3": 15, "s4": 10, "s5": 15, "s6": 10}, {"name": "Loy High 9th Floor", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.9, "reviews": 3413, "priceRange": "฿200-600", "priceMid": 400.0, "address": "466, 9 ถ. พหลโยธิน, เขตพญาไท", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 17:30–2:00", "phone": "+66 91 592 2996", "score": 89, "s1": 23, "s2": 14, "s3": 15, "s4": 12, "s5": 15, "s6": 10}, {"name": "ครัวดอกไม้ขาว", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.7, "reviews": 4713, "priceRange": "฿200-800", "priceMid": 500.0, "address": "678/1-7 ถ. บำรุงเมือง, เขตป้อมปราบศัตรูพ่าย", "distNote": "BTS อารีย์ | 250 ม. (~3 นาทีเดิน)", "distM": 250, "hours": "จ.–พฤ. 8:00–21:30 | ศ.ส. 8:00–22:00 | อา. 8:00–21:30", "phone": "+66 2 225 2749", "score": 89, "s1": 21, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 10}, {"name": "Apgujeong Grill Korean BBQ", "foodType": "ร้านอาหารบาร์บีคิวเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.9, "reviews": 799, "priceRange": "฿400-1,000", "priceMid": 700.0, "address": "Unit B01 (B floor, Vanit Village Aree, 304/1 ถ. พหลโยธิน, เขตพญาไท", "distNote": "BTS อารีย์ | 200 ม. (~2 นาทีเดิน)", "distM": 200, "hours": "ทุกวัน 11:30–15:00, 17:00–22:00", "phone": "+66 81 924 5462", "score": 88, "s1": 23, "s2": 14, "s3": 12, "s4": 14, "s5": 15, "s6": 10}, {"name": "Shabu Moto Ari", "foodType": "ภัตตาคารอาหารบุฟเฟต์", "foodTypeNorm": "บุฟเฟต์", "rating": 4.8, "reviews": 787, "priceRange": "฿600-1,000", "priceMid": 800.0, "address": "23, 1 ซ. กิ่งชำนาญอักษร, เขตพญาไท", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 12:00–22:00", "phone": "+66 93 377 4265", "score": 87, "s1": 21, "s2": 14, "s3": 15, "s4": 12, "s5": 15, "s6": 10}, {"name": "Paknang.bkk ปากนัง อาหารใต้", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 1342, "priceRange": "฿400-600", "priceMid": 500.0, "address": "2/23, 5 ซ. พหลโยธิน 7, เขตพญาไท", "distNote": "BTS อารีย์ | 420 ม. (~5 นาทีเดิน)", "distM": 420, "hours": "ทุกวัน 11:00–21:00", "phone": "", "score": 87, "s1": 21, "s2": 17, "s3": 15, "s4": 12, "s5": 15, "s6": 7}, {"name": "Baan Prapa บ้านประภา พหลโยธิน 17", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.9, "reviews": 1711, "priceRange": "฿400-1,200", "priceMid": 800.0, "address": "28, 10 ถ. พหลโยธิน, เขตจตุจักร", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:00–22:00", "phone": "+66 82 096 6146", "score": 86, "s1": 23, "s2": 17, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "โค ลิมิเต็ด เซ็นทรัลเวิลด์ - CO LIMITED central wOrld", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.8, "reviews": 1594, "priceRange": "฿200-1,000", "priceMid": 600.0, "address": "7th Floor Central World, 999/9 ถ. พระรามที่ 1, เขตปทุมวัน", "distNote": "BTS อารีย์ | 1500 ม. (~19 นาที / แนะนำนั่ง taxi)", "distM": 1500, "hours": "ทุกวัน 11:00–22:00", "phone": "", "score": 86, "s1": 21, "s2": 14, "s3": 15, "s4": 12, "s5": 15, "s6": 9}, {"name": "เล ลาว - ร้านส้มตำรางวัลมิชลิน 5 ปีซ้อน", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.5, "reviews": 2460, "priceRange": "฿400-600", "priceMid": 500.0, "address": "65 ซ. พหลโยธิน 7, เขตพญาไท", "distNote": "BTS อารีย์ | 420 ม. (~5 นาทีเดิน)", "distM": 420, "hours": "ทุกวัน 10:30–22:00", "phone": "", "score": 86, "s1": 19, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 9}, {"name": "ร้านดัลดัล", "foodType": "ภัตตาคารอาหารเกาหลี", "foodTypeNorm": "อาหารเกาหลี", "rating": 4.7, "reviews": 504, "priceRange": "฿200-400", "priceMid": 300.0, "address": "เลขที่9​ อาคารจี​ ทาวเวอร์​ ชั้นจี​ ถนนพระราม9​, เขตห้วยขวาง", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "จ.–ศ. 11:00–21:30 | ส.อา. 11:00–21:00", "phone": "+66 2 169 8213", "score": 86, "s1": 21, "s2": 20, "s3": 15, "s4": 6, "s5": 15, "s6": 9}, {"name": "พาสต้าอาม่า ราชเทวี", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 5584, "priceRange": "฿200-400", "priceMid": 300.0, "address": "503, ร้านพาสต้าอาม่า (หน้าร้านสีเหลือง 3 ถ. เพชรบุรี, เขตราชเทวี", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ไม่ระบุ", "phone": "", "score": 85, "s1": 25, "s2": 14, "s3": 15, "s4": 6, "s5": 15, "s6": 10}, {"name": "ฟู่ฟู่ ไต้หวันนีส ชาบูบุฟเฟต์ สาขา อารีย์", "foodType": "ร้านอาหารชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.6, "reviews": 1976, "priceRange": "฿600-800", "priceMid": 700.0, "address": "ที่อยู่ 133 ซอย, เขตพญาไท", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 11:30–22:00", "phone": "+66 99 325 9666", "score": 85, "s1": 17, "s2": 20, "s3": 12, "s4": 14, "s5": 15, "s6": 7}, {"name": "โมโม พาราไดซ์ สาขาเซ็นทรัลพระราม 9", "foodType": "ร้านสุกี้ยากี้และชาบูชาบู", "foodTypeNorm": "อาหารญี่ปุ่น", "rating": 4.6, "reviews": 1316, "priceRange": "฿600-800", "priceMid": 700.0, "address": "ชั้น 7 ศูนย์การค้าเซ็นทรัลพลาซ่า ถ. พระราม 9, เขตดินแดง", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–22:00", "phone": "+66 84 388 5568", "score": 84, "s1": 21, "s2": 20, "s3": 12, "s4": 6, "s5": 15, "s6": 10}, {"name": "ร้านอาหารกาลิค", "foodType": "ภัตตาคารอาหารไทย", "foodTypeNorm": "อาหารไทย", "rating": 4.5, "reviews": 1620, "priceRange": "฿200-600", "priceMid": 400.0, "address": "44 ซอย โชติวัฒน์, บางซื่อ", "distNote": "BTS อารีย์ | ระยะไม่ระบุ", "distM": null, "hours": "ทุกวัน 10:00–14:30, 16:00–22:00", "phone": "+66 89 182 2640", "score": 84, "s1": 19, "s2": 14, "s3": 15, "s4": 14, "s5": 15, "s6": 7}, {"name": "Karimaki", "foodType": "ร้านอาหาร", "foodTypeNorm": "นานาชาติ/อื่นๆ", "rating": 4.8, "reviews": 600, "priceRange": "฿200-400", "priceMid": 300.0, "address": "โครงการสนั่นนภา ซอย อารีย์ 1, เขตพญาไท", "distNote": "BTS อารีย์ | 150 ม. (~2 นาทีเดิน)", "distM": 150, "hours": "ทุกวัน 10:00–21:00", "phone": "+66 87 715 2777", "score": 83, "s1": 23, "s2": 17, "s3": 12, "s4": 6, "s5": 15, "s6": 10}]};
+
+// ---- Scenario definitions ----
+const SCENARIOS = {
+  safe: {
+    label:'ปลอดภัยสุด', color:'#1565c0', icon:'🛡️',
+    desc:'เลือกจาก Rating สูงสุด + รีวิวมากที่สุด — ความเสี่ยงต่ำที่สุดสำหรับทีม',
+    score: r => r.s1 * 2.5 + r.s4 * 1.5 + r.score * 0.3,
+    reasons: r => [
+      `คะแนนรีวิว ${r.s1}/25 จากรีวิวกว่า ${r.reviews.toLocaleString()} รายการ`,
+      `ระยะจาก BTS: ${r.distNote.split('|')[1]?.trim() || 'ใกล้สถานี'}`,
+      `ประเภทอาหาร: ${r.foodTypeNorm}`
+    ]
+  },
+  budget: {
+    label:'ประหยัด', color:'#e91e8c', icon:'💰',
+    desc:'ราคาต่ำสุดต่อคน แต่ยังรักษา Rating ไม่ต่ำกว่า 4.0 — คุ้มค่าที่สุด',
+    score: r => {
+      if(r.rating < 4.0) return 0;
+      const pScore = r.priceMid <= 200 ? 30 : r.priceMid <= 350 ? 25 : r.priceMid <= 500 ? 18 : r.priceMid <= 800 ? 10 : 3;
+      return pScore * 2 + r.s1 + r.s4;
+    },
+    reasons: r => [
+      `ราคาประมาณ ฿${Math.round(r.priceMid)} ต่อคน (${r.priceRange})`,
+      `Rating ${r.rating} ⭐ (${r.reviews.toLocaleString()} รีวิว)`,
+      `ระยะจาก BTS: ${r.distNote.split('|')[1]?.trim() || 'ใกล้สถานี'}`
+    ]
+  },
+  quick: {
+    label:'รีบกิน', color:'#f57c00', icon:'⚡',
+    desc:'ใกล้ BTS มากที่สุด + เหมาะทานเร็ว (ไม่ใช่บุฟเฟต์หรือปิ้งย่าง)',
+    score: r => {
+      const fastTypes = ['ราเมน','ก๋วยเตี๋ยว','ข้าวต้ม','ทงคัทสึ','อาหารญี่ปุ่น','อาหารจีน','อาหารไทย'];
+      const isFast = fastTypes.some(t => r.foodTypeNorm.includes(t) || r.foodType.includes(t));
+      const distScore = r.distM === null ? 8 : r.distM === 0 ? 20 : r.distM <= 200 ? 18 : r.distM <= 400 ? 14 : r.distM <= 700 ? 10 : 5;
+      return distScore * 2 + r.s1 + (isFast ? 10 : 0);
+    },
+    reasons: r => [
+      `ระยะจาก BTS: ${r.distNote.split('|')[1]?.trim() || 'ใกล้สถานี'}`,
+      `Rating ${r.rating} ⭐ (${r.reviews.toLocaleString()} รีวิว)`,
+      `ประเภทอาหาร: ${r.foodTypeNorm} — เหมาะทานเร็ว`
+    ]
+  },
+  work: {
+    label:'คุยงานได้', color:'#7b1fa2', icon:'💼',
+    desc:'บรรยากาศดี ไม่วุ่นวาย เหมาะนั่งคุยงาน — เน้น Rating + ราคากลาง',
+    score: r => {
+      const workTypes = ['อาหารญี่ปุ่น','อาหารไทย','นานาชาติ','อิตาเลียน','ตะวันตก'];
+      const isWork = workTypes.some(t => r.foodTypeNorm.includes(t));
+      const midPrice = r.priceMid >= 200 && r.priceMid <= 800 ? 15 : 5;
+      return r.s1 * 1.5 + midPrice + r.s4 + (isWork ? 10 : 0) + r.s6;
+    },
+    reasons: r => [
+      `Rating ${r.rating} ⭐ รีวิวกว่า ${r.reviews.toLocaleString()} — น่าเชื่อถือ`,
+      `ราคา ${r.priceRange} เหมาะงบทีมคุยงาน`,
+      `ระยะจาก BTS: ${r.distNote.split('|')[1]?.trim() || 'ใกล้สถานี'}`
+    ]
+  },
+  group: {
+    label:'ทีม 8–12 คน', color:'#2e7d52', icon:'👥',
+    desc:'รองรับกลุ่มใหญ่ บุฟเฟต์/BBQ/ชาบู/อาหารแชร์กัน — ได้คะแนน S2 สูงสุด',
+    score: r => r.s2 * 3 + r.s1 + r.s4,
+    reasons: r => [
+      `Group Score ${r.s2}/20 — ${r.s2>=20?'บุฟเฟต์/BBQ เหมาะมาก':r.s2>=17?'อาหารแชร์ได้ดี':'รองรับกลุ่มได้'}`,
+      `Rating ${r.rating} ⭐ (${r.reviews.toLocaleString()} รีวิว)`,
+      `ระยะจาก BTS: ${r.distNote.split('|')[1]?.trim() || 'ใกล้สถานี'}`
+    ]
+  }
+};
+
+const SC_COLORS = {safe:'#1565c0',budget:'#e91e8c',quick:'#f57c00',work:'#7b1fa2',group:'#2e7d52'};
+let curArea = 'สยาม', curScenario = 'safe';
+
+// ---- Helpers ----
+const BAR_COLORS = ['#b5851a','#1a8a7a','#2e7d52','#5a3c9e','#994e10','#9e2050'];
+const BAR_MAX = [25,20,15,15,15,10];
+
+function rankBadge(i){
+  if(i===0) return '<span class="rank-badge g">1</span>';
+  if(i===1) return '<span class="rank-badge s">2</span>';
+  if(i===2) return '<span class="rank-badge b">3</span>';
+  return '<span class="rank-badge">'+(i+1)+'</span>';
+}
+
+function shortName(n,max=34){ return n.length>max ? n.substring(0,max-1)+'…' : n; }
+
+function priceBg(mid){
+  if(!mid) return '#f5f5f5';
+  if(mid<=200) return '#e8f5e9';
+  if(mid<=500) return '#e3f2fd';
+  if(mid<=1000) return '#fff3e0';
+  return '#fce4ec';
+}
+
+function setTab(containerId, btn){
+  document.querySelectorAll('#'+containerId+' .area-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ---- Top 10 Table ----
+function showArea(area, btn, tabId){
+  setTab(tabId, btn);
+  const rs = DATA[area] || [];
+  document.getElementById('tableBody').innerHTML = rs.slice(0,10).map((r,i)=>`
+    <tr>
+      <td>${rankBadge(i)}</td>
+      <td style="max-width:200px"><div style="font-weight:600;font-size:12px;line-height:1.3">${shortName(r.name)}</div></td>
+      <td><span class="food-chip">${r.foodTypeNorm}</span></td>
+      <td><span class="star">★</span>${r.rating}<span style="color:var(--muted);font-size:10px"> (${r.reviews.toLocaleString()})</span></td>
+      <td><span class="price-chip" style="background:${priceBg(r.priceMid)};color:var(--text)">${r.priceRange}</span></td>
+      <td class="sm sm1">${r.s1}</td><td class="sm sm2">${r.s2}</td><td class="sm sm3">${r.s3}</td>
+      <td class="sm sm4">${r.s4}</td><td class="sm sm5">${r.s5}</td><td class="sm sm6">${r.s6}</td>
+      <td class="total-score">${r.score}</td>
+    </tr>`).join('');
+}
+
+// ---- Scenario ----
+function setScArea(area, btn){
+  setTab('tabsSC_area', btn);
+  curArea = area;
+  renderScenario();
+}
+
+function setScenario(sc, btn){
+  document.querySelectorAll('#scTabs .sc-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  curScenario = sc;
+  renderScenario();
+}
+
+function renderScenario(){
+  const sc = SCENARIOS[curScenario];
+  const color = sc.color;
+  document.getElementById('scDesc').textContent = sc.icon + '  ' + sc.desc;
+
+  const rs = (DATA[curArea] || []).slice();
+  const scored = rs.map(r => ({...r, scScore: sc.score(r)}))
+                   .filter(r => r.scScore > 0)
+                   .sort((a,b) => b.scScore - a.scScore)
+                   .slice(0, 3);
+
+  const rankLabels = ['#1 '+sc.label, '#2 '+sc.label, '#3 '+sc.label];
+  const rankBgs = ['rgba(255,255,255,1)','rgba(248,248,248,1)','rgba(245,245,245,1)'];
+
+  document.getElementById('scCards').innerHTML = scored.map((r,i) => {
+    const reasons = sc.reasons(r);
+    const maxSc = scored[0].scScore;
+    const pct = Math.round(r.scScore / maxSc * 100);
+    return `
+    <div class="sc-card" style="border-color:${i===0 ? color : 'var(--border)'}">
+      <div class="sc-card-header" style="background:${i===0 ? color+'14' : 'transparent'}">
+        <div class="sc-rank-label" style="background:${color}20;color:${color}">${rankLabels[i]}</div>
+        <span class="sc-badge" style="background:${color};color:#fff">★ ${r.rating}</span>
+        <div class="sc-name">${shortName(r.name, 40)}</div>
+        <div class="sc-chips">
+          <span class="food-chip">${r.foodTypeNorm}</span>
+          <span class="price-chip" style="background:${priceBg(r.priceMid)};color:var(--text)">${r.priceRange}</span>
+        </div>
+        <div class="sc-score-bar-wrap">
+          <div class="sc-score-bar" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="sc-score-label">
+          <span>SCENARIO SCORE</span>
+          <span class="sc-score-num" style="color:${color}">${r.scScore.toFixed(1)}</span>
+        </div>
+      </div>
+      <div class="sc-body">
+        <div class="sc-reasons">
+          ${reasons.map(reason => `<div class="sc-reason" style="--green:${color}">${reason}</div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Top 3 ----
+function showTop3(area, btn){
+  setTab('tabs3', btn);
+  const rs = (DATA[area]||[]).slice(0,3);
+  const labels = ['Rating & Review','Group Fit','Price Fit','Travel','Completeness','Uniqueness'];
+  document.getElementById('top3Grid').innerHTML = rs.map((r,i)=>`
+    <div class="top3-card ${i===0?'rank1':''}">
+      <div class="card-header">
+        <span class="card-rank r${i+1}">#${i+1}</span>
+        <div class="card-name">${r.name}</div>
+        <div class="card-meta">
+          <span class="food-chip">${r.foodTypeNorm}</span>
+          <span style="color:var(--muted);font-size:11px"><span class="star">★</span>${r.rating}</span>
+          <span style="color:var(--muted);font-size:11px">${r.priceRange}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="sb-title">Score Breakdown</div>
+        ${labels.map((l,j)=>`
+          <div class="sb-row">
+            <span class="sb-label">${l}</span>
+            <div class="sb-bar-wrap"><div class="sb-bar" style="width:${([r.s1,r.s2,r.s3,r.s4,r.s5,r.s6][j]/BAR_MAX[j]*100).toFixed(0)}%;background:${BAR_COLORS[j]}"></div></div>
+            <span class="sb-val">${[r.s1,r.s2,r.s3,r.s4,r.s5,r.s6][j]}/${BAR_MAX[j]}</span>
+          </div>`).join('')}
+        <div class="total-row"><span class="total-label">Total Score</span><span class="total-val">${r.score}/100</span></div>
+      </div>
+      <div class="card-footer">
+        <span class="info-pill">🕐 <b>${r.hours||'—'}</b></span>
+        <span class="info-pill">🚇 <b>${(r.distNote||'').split('|')[1]?.trim()||'—'}</b></span>
+        ${r.phone ? `<span class="info-pill">📞 <b>${r.phone}</b></span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// ---- Comparison ----
+function showCompare(area, btn){
+  setTab('tabsC', btn);
+  const rs = (DATA[area]||[]).slice(0,3);
+  document.getElementById('compareGrid').innerHTML = rs.map((r,i)=>{
+    const pros=[], cons=[];
+    if(r.rating>=4.8) pros.push('Rating สูงมาก'); else if(r.rating<4.5) cons.push('Rating ปานกลาง');
+    if(r.reviews>=2000) pros.push('รีวิวเยอะ น่าเชื่อถือ'); else cons.push('รีวิวยังน้อย');
+    if(r.s2>=20) pros.push('เหมาะกลุ่มใหญ่มาก'); else if(r.s2>=17) pros.push('รองรับกลุ่มได้ดี');
+    if(r.s3>=15) pros.push('ราคาเหมาะงบทีม'); else if(r.s3<=6) cons.push('ราคาค่อนข้างแพง');
+    if(r.s4>=14) pros.push('ใกล้ BTS มาก'); else if(r.s4<=8) cons.push('ไกลจาก BTS');
+    const verdicts=['ตัวเลือกยอดนิยม — Score สูงสุดในย่าน เหมาะเป็น First Choice','ทางเลือกที่ดี — คุณภาพใกล้เคียงอันดับ 1 แต่ต่างด้านประเภทอาหาร','ตัวเลือกสำรอง — โดดเด่นด้านประเภทอาหารหรือราคา'];
+    return `
+    <div class="compare-card">
+      <div class="compare-name">${r.name}</div>
+      <div class="compare-area">${area} · Score ${r.score}/100</div>
+      <div class="compare-row">
+        <div class="pro-box"><div class="box-label">✅ Pros</div><div class="box-items">${pros.map(p=>`<span>· ${p}</span>`).join('')||'<span>· ข้อมูลมาตรฐาน</span>'}</div></div>
+        <div class="con-box"><div class="box-label">⚠️ Cons</div><div class="box-items">${cons.map(c=>`<span>· ${c}</span>`).join('')||'<span>· ไม่มีข้อเสียชัดเจน</span>'}</div></div>
+      </div>
+      <div class="verdict">💡 ${verdicts[i]||'ตัวเลือกที่น่าพิจารณา'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Init ----
+showArea('สยาม', document.querySelector('#tabs10 .area-tab'), 'tabs10');
+showTop3('สยาม', document.querySelector('#tabs3 .area-tab'));
+showCompare('สยาม', document.querySelector('#tabsC .area-tab'));
+curArea = 'สยาม'; curScenario = 'safe';
+renderScenario();
+
+// Scroll highlight nav
+const secs = document.querySelectorAll('section[id],.hero[id]');
+const navLinks = document.querySelectorAll('nav a');
+window.addEventListener('scroll',()=>{
+  let cur='';
+  secs.forEach(s=>{if(window.scrollY>=s.offsetTop-80)cur=s.id});
+  navLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+});
+</script>
+</body>
+</html>
